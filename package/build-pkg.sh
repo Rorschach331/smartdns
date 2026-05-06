@@ -305,12 +305,8 @@ build_webpages()
 		return 1
 	fi
 
-	if [ -f "$SMARTDNS_WEBUI_SOURCE/out/index.html" ]; then
-		echo "smartdns-webui already built, skipping build."
-		return 0
-	fi
-
 	echo "Building smartdns-webui..."
+	rm -rf $SMARTDNS_WEBUI_SOURCE/out
 	npm install --prefix $SMARTDNS_WEBUI_SOURCE
 	if [ $? -ne 0 ]; then
 		echo "Failed to install smartdns-webui dependencies."
