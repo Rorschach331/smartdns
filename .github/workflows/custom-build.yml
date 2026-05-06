@@ -16,7 +16,7 @@ on:
         required: true
         default: "x86-64"
       platform:
-        description: "Platform (linux, openwrt, debian, luci)"
+        description: "Platform (linux, openwrt, debian, luci, optware, redhat, windows)"
         required: true
         default: "linux"
 
