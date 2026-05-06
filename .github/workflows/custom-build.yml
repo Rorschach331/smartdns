@@ -4,21 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       ui_repo:
-        description: 'WebUI Repository (e.g., your-username/smartdns-webui)'
+        description: "WebUI Repository (e.g., your-username/smartdns-webui)"
         required: true
-        default: 'pymumu/smartdns-webui'
+        default: "Rorschach331/smartdns-webui"
       ui_branch:
-        description: 'WebUI Branch'
+        description: "WebUI Branch"
         required: true
-        default: 'main'
+        default: "main"
       arch:
-        description: 'Architecture (e.g., x86-64, arm64, armhf, mips)'
+        description: "Architecture (e.g., x86-64, arm64, armhf, mips)"
         required: true
-        default: 'x86-64'
+        default: "x86-64"
       platform:
-        description: 'Platform (linux, openwrt, debian, luci)'
+        description: "Platform (linux, openwrt, debian, luci)"
         required: true
-        default: 'linux'
+        default: "linux"
 
 jobs:
   build:
