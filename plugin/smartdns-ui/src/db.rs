@@ -92,6 +92,7 @@ pub struct DomainData {
     pub domain: String,
     pub domain_type: u32,
     pub client: String,
+    pub client_hostname: String,
     pub domain_group: String,
     pub reply_code: u16,
     pub query_time: i32,
@@ -1322,7 +1323,9 @@ impl DB {
         let (sql_where, sql_order, mut sql_param) = Self::get_domain_sql_where(param)?;
 
         let mut sql = String::new();
-        sql.push_str("SELECT id, timestamp, domain, domain_type, client, domain_group, reply_code, query_time, ping_time, is_blocked, is_cached FROM domain");
+        sql.push_str("SELECT d.id, d.timestamp, d.domain, d.domain_type, d.client, \
+                      (SELECT c.hostname FROM client c WHERE c.client_ip = d.client ORDER BY (CASE WHEN c.mac != '00:00:00:00:00:00' THEN 1 ELSE 0 END) DESC, c.last_query_timestamp DESC LIMIT 1) as client_hostname, \
+                      d.domain_group, d.reply_code, d.query_time, d.ping_time, d.is_blocked, d.is_cached FROM domain d");
 
         sql.push_str(sql_where.as_str());
         sql.push_str(sql_order.as_str());
@@ -1365,12 +1368,13 @@ impl DB {
                 domain: row.get(2)?,
                 domain_type: row.get(3)?,
                 client: row.get(4)?,
-                domain_group: row.get(5)?,
-                reply_code: row.get(6)?,
-                query_time: row.get(7)?,
-                ping_time: row.get(8)?,
-                is_blocked: row.get(9)?,
-                is_cached: row.get(10)?,
+                client_hostname: row.get(5).unwrap_or_default(),
+                domain_group: row.get(6)?,
+                reply_code: row.get(7)?,
+                query_time: row.get(8)?,
+                ping_time: row.get(9)?,
+                is_blocked: row.get(10)?,
+                is_cached: row.get(11)?,
             })
         });
 
@@ -1438,6 +1442,19 @@ impl DB {
         stmt.finalize()?;
         tx.commit()?;
 
+        Ok(())
+    }
+
+    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn Error>> {
+        let mut conn = self.conn.lock().unwrap();
+        if conn.as_ref().is_none() {
+            return Err("db is not open".into());
+        }
+        let conn = conn.as_mut().unwrap();
+        conn.execute(
+            "UPDATE client SET hostname = ?1 WHERE mac = ?2",
+            [hostname, mac],
+        )?;
         Ok(())
     }
 

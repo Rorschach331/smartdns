@@ -444,6 +444,10 @@ impl DataServer {
         self.db.get_client_list(Some(param))
     }
 
+    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn Error>> {
+        self.db.update_client_hostname(mac, hostname)
+    }
+
     pub fn get_top_client_top_list(
         &self,
         count: Option<u32>,
@@ -589,6 +593,7 @@ impl DataServer {
                 domain: req.get_domain(),
                 domain_type: req.get_qtype(),
                 client: req.get_remote_addr(),
+                client_hostname: "".to_string(),
                 domain_group: req.get_group_name(),
                 reply_code: req.get_rcode(),
                 timestamp: req.get_query_timestamp(),

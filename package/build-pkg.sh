@@ -264,6 +264,15 @@ build_smartdns()
 build_webpages()
 {
 	if [ ! -f "$WORKDIR/smartdns-webui.zip" ]; then
+		# check if local smartdns-webui source exists in the root directory
+		if [ -d "$CODE_DIR/smartdns-webui" ]; then
+			echo "Found local smartdns-webui source at $CODE_DIR/smartdns-webui"
+			rm -fr $SMARTDNS_WEBUI_SOURCE
+			cp -r $CODE_DIR/smartdns-webui $SMARTDNS_WEBUI_SOURCE
+		fi
+	fi
+
+	if [ ! -f "$WORKDIR/smartdns-webui.zip" ] && [ ! -d "$SMARTDNS_WEBUI_SOURCE" ]; then
 		echo "smartdns-webui source not found, downloading..."
 		wget -O $WORKDIR/smartdns-webui.zip $SMARTDNS_WEBUI_URL
 		if [ $? -ne 0 ]; then

@@ -89,6 +89,7 @@ impl API {
         api.register(Method::GET, "/api/domain/{id}",  true, APIRoute!(API::api_domain_get_by_id));
         api.register(Method::DELETE, "/api/domain/{id}",  true, APIRoute!(API::api_domain_delete_by_id));
         api.register(Method::GET, "/api/client", true, APIRoute!(API::api_client_get_list));
+        api.register(Method::POST, "/api/client/hostname", true, APIRoute!(API::api_client_update_hostname));
         api.register(Method::DELETE, "/api/client/{id}",  true, APIRoute!(API::api_client_delete_by_id));
         api.register(Method::GET, "/api/log/stream", true, APIRoute!(API::api_log_stream));
         api.register(Method::PUT, "/api/log/level", true, APIRoute!(API::api_log_set_level));
@@ -833,6 +834,53 @@ impl API {
         let body = api_msg_gen_client_list(&client_list, total_page, total_count);
 
         API::response_build(StatusCode::OK, body)
+    }
+
+    async fn api_client_update_hostname(
+        this: Arc<HttpServer>,
+        _param: APIRouteParam,
+        req: Request<body::Incoming>,
+    ) -> Result<Response<Full<Bytes>>, HttpError> {
+        let whole_body = String::from_utf8(req.into_body().collect().await?.to_bytes().into())?;
+        let v: serde_json::Value = match serde_json::from_str(&whole_body) {
+            Ok(v) => v,
+            Err(_) => {
+                return API::response_error(StatusCode::BAD_REQUEST, "Invalid JSON");
+            }
+        };
+
+        let mac = match v["mac"].as_str() {
+            Some(v) => v,
+            None => {
+                return API::response_error(StatusCode::BAD_REQUEST, "Missing mac");
+            }
+        };
+
+        let hostname = match v["hostname"].as_str() {
+            Some(v) => v,
+            None => {
+                return API::response_error(StatusCode::BAD_REQUEST, "Missing hostname");
+            }
+        };
+
+        let data_server = this.get_data_server();
+        let mac = mac.to_string();
+        let hostname = hostname.to_string();
+        let ret = API::call_blocking(this, move || {
+            data_server.update_client_hostname(&mac, &hostname)
+        })
+        .await;
+
+        if let Err(e) = ret {
+            return API::response_error(StatusCode::INTERNAL_SERVER_ERROR, e.to_string().as_str());
+        }
+
+        let ret = ret.unwrap();
+        if let Err(e) = ret {
+            return API::response_error(StatusCode::INTERNAL_SERVER_ERROR, e.to_string().as_str());
+        }
+
+        API::response_build(StatusCode::OK, "{\"status\": \"ok\"}".to_string())
     }
 
     async fn api_log_stream(
