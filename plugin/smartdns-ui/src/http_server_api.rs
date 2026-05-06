@@ -866,8 +866,8 @@ impl API {
         let data_server = this.get_data_server();
         let mac = mac.to_string();
         let hostname = hostname.to_string();
-        let ret = API::call_blocking(this, move || {
-            data_server.update_client_hostname(&mac, &hostname).map_err(|e| e.to_string())
+        let ret = API::call_blocking(this, move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            data_server.update_client_hostname(&mac, &hostname).map_err(|e| e.into())
         })
         .await;
 
