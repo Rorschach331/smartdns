@@ -305,14 +305,6 @@ build_webpages()
 		return 1
 	fi
 
-	echo "Checking source code for custom changes..."
-	grep "client_hostname" $SMARTDNS_WEBUI_SOURCE/src/components/dashboard/query-log/query-log-table.tsx > /dev/null
-	if [ $? -ne 0 ]; then
-		echo "CRITICAL: Custom changes (client_hostname) NOT FOUND in source code!"
-	else
-		echo "VERIFIED: Custom changes found in source code."
-	fi
-
 	echo "Building smartdns-webui..."
 	rm -rf $SMARTDNS_WEBUI_SOURCE/out
 	npm install --prefix $SMARTDNS_WEBUI_SOURCE
