@@ -444,7 +444,7 @@ impl DataServer {
         self.db.get_client_list(Some(param))
     }
 
-    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn Error>> {
+    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.db.update_client_hostname(mac, hostname)
     }
 

@@ -1445,7 +1445,7 @@ impl DB {
         Ok(())
     }
 
-    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn Error>> {
+    pub fn update_client_hostname(&self, mac: &str, hostname: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut conn = self.conn.lock().unwrap();
         if conn.as_ref().is_none() {
             return Err("db is not open".into());
