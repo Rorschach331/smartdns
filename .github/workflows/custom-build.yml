@@ -70,11 +70,9 @@ jobs:
             
             # 添加适用于其它架构的 ports 归档源
             CODENAME=$(lsb_release -sc)
-            sudo tee /etc/apt/sources.list.d/ports.list <<EOF
-deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME} main restricted universe multiverse
-deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-updates main restricted universe multiverse
-deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-security main restricted universe multiverse
-EOF
+            echo "deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME} main restricted universe multiverse" | sudo tee /etc/apt/sources.list.d/ports.list
+            echo "deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/ports.list
+            echo "deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list.d/ports.list
           fi
 
           if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
@@ -119,7 +117,7 @@ EOF
             package/*.ipk
 
       - name: Publish to GitHub Release
-        if: ${{ github.event.inputs.publish_release == 'true' || github.event.inputs.publish_release == true }}
+        if: github.event.inputs.publish_release == 'true' || github.event.inputs.publish_release == true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: custom-build-${{ github.event.inputs.platform }}-${{ github.event.inputs.arch }}
