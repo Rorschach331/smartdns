@@ -54,9 +54,29 @@ jobs:
           sudo apt update
           sudo apt install -y binutils perl curl make gcc clang wget unzip ca-certificates
 
-          # 自动识别并安装所需的交叉编译工具链
+          # 自动识别并配置所需的交叉编译源与工具链
           ARCH="${{ github.event.inputs.arch }}"
           CROSS_TOOL=""
+          if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "armhf" ] || [ "$ARCH" = "arm" ] || [ "$ARCH" = "armel" ]; then
+            echo "Configuring multi-arch APT sources to prevent 404..."
+            # 限制原主源仅服务于 amd64 架构
+            if [ -f /etc/apt/sources.list ]; then
+              sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+              sudo sed -i 's/deb mirror/deb [arch=amd64] mirror/g' /etc/apt/sources.list
+            fi
+            if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+              sudo sed -i '/Types: deb/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources
+            fi
+            
+            # 添加适用于其它架构的 ports 归档源
+            CODENAME=$(lsb_release -sc)
+            sudo tee /etc/apt/sources.list.d/ports.list <<EOF
+deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME} main restricted universe multiverse
+deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-updates main restricted universe multiverse
+deb [arch=arm64,armhf,armel] http://ports.ubuntu.com/ubuntu-ports/ ${CODENAME}-security main restricted universe multiverse
+EOF
+          fi
+
           if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
             echo "Installing ARM64 cross-compiler and dependencies..."
             sudo dpkg --add-architecture arm64
