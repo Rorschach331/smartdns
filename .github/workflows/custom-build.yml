@@ -19,10 +19,17 @@ on:
         description: "Platform (linux, openwrt, debian, luci, optware, redhat, windows)"
         required: true
         default: "linux"
+      publish_release:
+        description: "Publish to GitHub Release"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout SmartDNS
         uses: actions/checkout@v4
@@ -47,10 +54,34 @@ jobs:
           sudo apt update
           sudo apt install -y binutils perl curl make gcc clang wget unzip ca-certificates
 
+          # 自动识别并安装所需的交叉编译工具链
+          ARCH="${{ github.event.inputs.arch }}"
+          CROSS_TOOL=""
+          if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+            echo "Installing ARM64 cross-compiler..."
+            sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            CROSS_TOOL="aarch64-linux-gnu-"
+          elif [ "$ARCH" = "armhf" ]; then
+            echo "Installing ARMHF cross-compiler..."
+            sudo apt install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+            CROSS_TOOL="arm-linux-gnueabihf-"
+          elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "armel" ]; then
+            echo "Installing ARM cross-compiler..."
+            sudo apt install -y gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+            CROSS_TOOL="arm-linux-gnueabi-"
+          fi
+
+          echo "CROSS_TOOL=${CROSS_TOOL}" >> $GITHUB_ENV
+
       - name: Build Package
         run: |
+          EXTRA_ARGS=""
+          if [ ! -z "${CROSS_TOOL}" ]; then
+            EXTRA_ARGS="--cross-tool ${CROSS_TOOL}"
+            echo "Building with cross-tool: ${CROSS_TOOL}"
+          fi
           # The build-pkg.sh will find our local smartdns-webui folder
-          sh ./package/build-pkg.sh --platform ${{ github.event.inputs.platform }} --arch ${{ github.event.inputs.arch }} --with-ui --static
+          sh ./package/build-pkg.sh --platform ${{ github.event.inputs.platform }} --arch ${{ github.event.inputs.arch }} --with-ui --static $EXTRA_ARGS
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -60,3 +91,23 @@ jobs:
             package/*.tar.gz
             package/*.deb
             package/*.ipk
+
+      - name: Publish to GitHub Release
+        if: ${{ github.event.inputs.publish_release == 'true' || github.event.inputs.publish_release == true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: custom-build-${{ github.event.inputs.platform }}-${{ github.event.inputs.arch }}
+          name: Custom Build (${{ github.event.inputs.platform }} - ${{ github.event.inputs.arch }})
+          body: |
+            Custom SmartDNS build with WebUI.
+            - WebUI Repo: `${{ github.event.inputs.ui_repo }}`
+            - WebUI Branch: `${{ github.event.inputs.ui_branch }}`
+            - Target Platform: `${{ github.event.inputs.platform }}`
+            - Target Arch: `${{ github.event.inputs.arch }}`
+            - Build Run: [View Action Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          files: |
+            package/*.tar.gz
+            package/*.deb
+            package/*.ipk
+          generate_release_notes: false
+          make_latest: false
